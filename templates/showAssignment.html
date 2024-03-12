@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>Dashboard</title>
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+  <script src="{{ url_for('static', filename='assets/js/core.min.js') }}"></script>
+  <!-- Favicons -->
+  <link href="{{ url_for('static', filename='assets/img/favicon.png') }}" rel="icon">
+  <link href="{{ url_for('static', filename='assets/img/apple-touch-icon.png') }}" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link
+    href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i"
+    rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <!-- Vendor CSS Files -->
+  <link href="{{ url_for('static', filename='assets/vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/boxicons/css/boxicons.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/quill/quill.snow.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/quill/quill.bubble.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/remixicon/remixicon.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='assets/vendor/simple-datatables/style.css') }}" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="{{ url_for('static', filename='assets/css/style1.css') }}" rel="stylesheet">
+
+
+  <script>
+    $(document).ready(function () {
+      var fileInput = $('#assZipFile');
+      var submitButton = $('#finalSubmit');
+      fileInput.change(function () {
+        if (fileInput.val()) {
+          submitButton.prop('disabled', false);
+        } else {
+          submitButton.prop('disabled', true);
+        }
+      });
+    });
+
+
+    var gAccName;
+    var assName;
+    function hello() {
+      $.ajax({
+        'url': 'getData',
+        'type': 'POST',
+        'success': function (response) {
+          accName = response;
+          document.getElementById("accName").innerHTML = accName;
+          gAccName = accName;
+        },
+        'error': function (response) {
+          alert("Problem");
+        }
+      });
+      assName = document.getElementById("assName").value;
+      $.ajax({
+        "url": 'getAssData',
+        "type": 'post',
+        "data": { 'assName': assName },
+        "success": function (response) {
+          let questions = response['questions'];
+          for (let i = 0; i < questions.length; i++) {
+            $("#quesTable tbody").append("<tr><th scope='row' style='text-align: center;'>" + (i + 1) + "</th><td style='text-align: center;'>" + questions[i]['name'] + "</td><td style='text-align: center;'><button type='button' class='btn btn-primary' onclick='viewQuestion(\"" + assName + "," + questions[i]['name'] + "\")'>View</button></td></tr>");
+          }
+        }
+      })
+    }
+    function viewQuestion(assName) {
+      qNm = assName.split(",")[1];
+      assName = assName.split(",")[0];
+      $.ajax({
+        'url': 'giveQuestionData',
+        'type': 'POST',
+        'data': { 'qnm': qNm, 'assName': assName },
+        'success': function (response) {
+          document.getElementById("questionNameHeading").innerHTML = qNm;
+          document.getElementById("questionDescription").innerHTML = response['questionPrompt'];
+        }
+      })
+      $('#exampleModalLong').modal('show');
+    }
+    function closeModalButton() {
+      $('#exampleModalLong').modal('hide');
+    }
+    function submitAssignment()
+    {
+      var fileInput=$('#assZipFile');
+      var formData = new FormData();
+      formData.append('assName',assName);
+      formData.append('user',gAccName);
+      formData.append('file', fileInput[0].files[0]);
+      $.ajax({
+        'url':'submitAssignment',
+        'type':'POST',
+        'data':formData,
+        'processData': false,
+        'contentType': false,
+        'success':function(response){
+          alert(response);
+          window.location.replace("/");
+        }
+      });
+    }
+  </script>
+</head>
+
+<body onload="hello()">
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="header fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="/" class="logo d-flex align-items-center">
+        <img src="{{ url_for('static', filename='img/IPLogo.png') }}" alt="">
+        <span class="d-none d-lg-block">Smart Teacher</span>
+      </a>
+      <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div><!-- End Logo -->
+
+    <input type="hidden" id="assName" value="{{assName}}">
+
+    <nav class="header-nav ms-auto">
+      <ul class="d-flex align-items-center">
+        <li class="nav-item dropdown pe-3">
+
+          <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
+            <img src="{{ url_for('static', filename='assets/img/userProfile.png') }}" alt="Profile"
+              class="rounded-circle">
+            <span class="d-none d-md-block dropdown-toggle ps-2" id="accName"></span>
+          </a><!-- End Profile Iamge Icon -->
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="/profile">
+                <i class="bi bi-person"></i>
+                <span>My Profile</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="/profile">
+                <i class="bi bi-gear"></i>
+                <span>Account Settings</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="/logout">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Sign Out</span>
+              </a>
+            </li>
+
+          </ul><!-- End Profile Dropdown Items -->
+        </li><!-- End Profile Nav -->
+
+      </ul>
+    </nav><!-- End Icons Navigation -->
+
+  </header><!-- End Header -->
+
+  <!-- ======= Sidebar ======= -->
+  <aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+      <li class="nav-item">
+        <a class="nav-link " href="/">
+          <i class="bi bi-grid"></i>
+          <span>Dashboard</span>
+        </a>
+      </li><!-- End Dashboard Nav -->
+
+
+      <li class="nav-heading">Pages</li>
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="/st_assignments">
+          <i class="bi bi-person"></i>
+          <span>Assignments</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="/rankLists">
+          <i class="bi bi-person"></i>
+          <span>Rank Lists</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="/logout">
+          <i class="bi bi-power"></i>
+          <span>Logout</span>
+        </a>
+      </li><!-- End Register Page Nav -->
+    </ul>
+
+  </aside><!-- End Sidebar-->
+
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Student's Dashboard</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section dashboard">
+
+      <div class="col-sm-6">
+        <center>
+          <h1>{{assName}}</h1>
+          <h2>List of Questions</h2>
+          <table class="table table-hover" id="quesTable">
+            <thead>
+              <tr>
+                <th scope="col" style="text-align: center;">#</th>
+                <th scope="col" style="text-align: center;">Question Name</th>
+                <th scope="col" style="text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+          </table>
+        </center>
+        <h4>Note :</h4>
+        <ul>
+          <li>Please upload all the question in a single zip file</li>
+          <li>Naming convention for zip file is <h5>AssignmentName_studentID.zip</h5>
+          </li>
+          <li>For question <b>#1</b> your file name should be <b>1.py</b> or <b>1.cpp</b> or <b>1.c</b> etc. and so on
+            for other questions</li>
+          <li>If any of the conditions fails to be followed, your assignment will not be graded and marked as
+            Inappropriate Submission</li>
+        </ul>
+        <div class="col-sm-6">
+          <label for="formFile" class="form-label">Select Assignment Zip File</label>
+          <input class="form-control" type="file" id="assZipFile" accept=".zip"><br>
+          <button type="button" class="btn btn-primary" id="finalSubmit" onclick="submitAssignment()" disabled>Submit
+            Assignment</button>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="exampleModalLong" tabindex="-1" role="dialog"
+          aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">Question Details</h5>
+              </div>
+              <div class="modal-body">
+                <h2 id="questionNameHeading"></h2>
+                <p id="questionDescription"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                  onclick="closeModalButton()">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main><!-- End #main -->
+
+
+
+  <script src="{{ url_for('static', filename='assets/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <!-- Template Main JS File -->
+  <script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+
+</body>
+
+</html>
