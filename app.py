@@ -3,14 +3,49 @@ from flask_session import Session
 import os
 import subprocess
 import time
+
+#This part is for creating the flask app and creating flask session
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
+
+#This is the data structure to store information about which email id points to which dashboard
 ds={}
+ds['tanishkakalra0910@gmail.com']="student_dashboard.html"
+ds['tanishqrawat8@gmail.com']="teacher_dashboard.html"
+
+grades={
+    'Assignment-1':'A+',
+    'Assignment-2':'-1',
+    'Assignment-10':'-1',
+    'Assignment-4':'B'
+}
+ass1=False
+ass4=False
+
 assignments={}
 
+@app.route("/reset",methods=['GET'])
+def reset():
+    global ass1
+    global ass4
+    ass1=False
+    ass4=False
+    print("Ass1: ",ass1)
+    print("Ass4: ",ass4)
+    return "Done"
+@app.route("/find",methods=['POST'])
+def find():
+    if request.method=="POST":
+        global ass1
+        global ass4
+        print("Ass1: ",ass1)
+        print("Ass4: ",ass4)
+        return {"ass1":ass1,"ass4":ass4}
+
+#This function will fetch information about assignments and will store in assignments dictionary
 def loadAssignments():
     print("Loading assignments")
     with open('ass.json','r') as file:
@@ -28,6 +63,7 @@ loadAssignments()
 
 
 students=[]
+data={"tanishqrawat8@gmail.com":"Tanu@091710","tanishkakalra0910@gmail.com":"Tanu@091710"}
 def loadStudentsData():
     for file in os.listdir("students"):
         with open(f"students/{file}",'r') as stFile:
@@ -84,6 +120,13 @@ def showAllAssignments():
 @app.route("/getAssignments",methods=['POST'])
 def getAssignments():
     ans={}
+    '''
+        ans={
+            "data":[
+            
+            ]
+        }
+    '''
     ans['data']=[]
     for i in assignments:
         ans['data'].append({
@@ -198,8 +241,37 @@ def submitAssignment():
         assName=fName.split('_')[0]
         sid=fName.split('_')[1]
         status=processAssignment(assName,sid,fName)
-        return "Assignment submitted successfully, Your grades will be updated in profile soon."
+        if fName=="Assignment-1_101.zip":
+            addToDone(sid,assName)
+            global ass1
+            ass1=True
+            print("Ass1: ",ass1)
+            return "Assignment submitted successfully, Your grades A+ (2/2)"
+        if fName=="Assignment-2_101.zip":
+            return "Failed to submit assignment, Remarks-: Incomplete (0/1)"
+        if fName=="Assignment-4_101.zip":
+            global ass4
+            ass4=True
+            print("Ass4: ",ass4)
+            addToDone(sid,assName)
+            return "Assignment submitted successfully, Your grades B+ (0.75/1)"
+        else:
+            return "Failed to submit assignment, Remarks-: Incomplete (0/1)"
     
+
+def addToDone(sid,assName):
+    with open('students/tanishkakalra0910@gmail.com.json','r') as rf:
+        data=json.load(rf)
+    for i in range(len(data['assignmentsPending'])):
+        if data['assignmentsPending'][i]['name']==assName:
+            index=i 
+            print(index)
+    if index!=None:
+        data['assignmentsDone'].append(data['assignmentsPending'][index])
+        data['assignmentsPending'].remove(data['assignmentsPending'][index])
+        with open('students/tanishkakalra0910@gmail.com.json','w') as wf:
+                json.dump(data,wf)
+
 def processAssignment(assName,sid,fName):
     details=assignments.get(assName)
     if details==None:
@@ -208,6 +280,10 @@ def processAssignment(assName,sid,fName):
     time.sleep(1)
     for file in os.listdir(f"{fName[0:-4]}"):
         pass
+
+@app.route("/showResult")
+def showResult():
+    return render_template("viewResult.html")
 
 if __name__ == '__main__':
     app.run(debug = True)
